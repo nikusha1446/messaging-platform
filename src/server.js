@@ -27,6 +27,28 @@ app.get('/health', (req, res) => {
 io.on('connection', (socket) => {
   logger.info(`Client connected: ${socket.id}`);
 
+  socket.on('message', (data) => {
+    logger.info(`Message from ${socket.id}:`, data);
+
+    const messageText = typeof data === 'string' ? data : String(data);
+
+    if (!messageText || messageText.trim() === '') {
+      socket.emit('error', { message: 'Message cannot be empty' });
+      return;
+    }
+
+    const message = {
+      id: `${Date.now()}-${socket.id}`,
+      text: messageText.trim(),
+      senderId: socket.id,
+      timestamp: new Date().toISOString(),
+    };
+
+    io.emit('message', message);
+
+    logger.info(`Message broadcasted:`, message);
+  });
+
   socket.on('disconnect', (reason) => {
     logger.info(`Client disconnected: ${socket.id}, reason: ${reason}`);
   });
