@@ -2,7 +2,9 @@ export class UserService {
   constructor() {
     this.users = new Map();
     this.usernames = new Set();
+    this.typingUsers = new Map();
     this.AWAY_THRESHOLD = 2 * 60 * 1000;
+    this.TYPING_TIMEOUT = 5000;
   }
 
   addUser(socketId, username) {
@@ -30,6 +32,7 @@ export class UserService {
     if (user) {
       this.users.delete(socketId);
       this.usernames.delete(user.username);
+      this.clearTypingTimeout(socketId);
       return user;
     }
 
@@ -79,5 +82,45 @@ export class UserService {
     }
 
     return changedUsers;
+  }
+
+  setTyping(socketId) {
+    const user = this.users.get(socketId);
+    if (!user) return null;
+
+    this.clearTypingTimeout(socketId);
+    user.isTyping = true;
+
+    return user;
+  }
+
+  stopTyping(socketId) {
+    const user = this.users.get(socketId);
+    if (!user) return null;
+
+    this.clearTypingTimeout(socketId);
+    user.isTyping = false;
+
+    return user;
+  }
+
+  setTypingTimeout(socketId, callback) {
+    this.clearTypingTimeout(socketId);
+    const timeout = setTimeout(callback, this.TYPING_TIMEOUT);
+    this.typingUsers.set(socketId, timeout);
+  }
+
+  clearTypingTimeout(socketId) {
+    const timeout = this.typingUsers.get(socketId);
+
+    if (timeout) {
+      clearTimeout(timeout);
+      this.typingUsers.delete(socketId);
+    }
+  }
+
+  isUserTyping(socketId) {
+    const user = this.users.get(socketId);
+    return user ? user.isTyping : false;
   }
 }

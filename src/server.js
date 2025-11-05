@@ -83,6 +83,44 @@ io.on('connection', (socket) => {
     users: userService.getAllUsers(),
   });
 
+  socket.on('typing:start', () => {
+    const user = userService.setTyping(socket.id);
+
+    if (user) {
+      logger.debug(`${user.username} started typing`);
+
+      socket.broadcast.emit('user:typing', {
+        userId: user.id,
+        username: user.username,
+      });
+
+      userService.setTypingTimeout(socket.id, () => {
+        const user = userService.stopTyping(socket.id);
+        if (user) {
+          logger.debug(`${user.username} auto-stopped typing (timeout)`);
+
+          socket.broadcast.emit('user:stopped:typing', {
+            userId: user.id,
+            username: user.username,
+          });
+        }
+      });
+    }
+  });
+
+  socket.on('typing:stop', () => {
+    const user = userService.stopTyping(socket.id);
+
+    if (user) {
+      logger.debug(`${user.username} stopped typing`);
+
+      socket.broadcast.emit('user:stopped:typing', {
+        userId: user.id,
+        username: user.username,
+      });
+    }
+  });
+
   socket.on('message', (data) => {
     const messageText = typeof data === 'string' ? data : String(data);
 
@@ -90,6 +128,8 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Message cannot be empty' });
       return;
     }
+
+    userService.stopTyping(socket.id);
 
     const activityResult = userService.updateActivity(socket.id);
 
