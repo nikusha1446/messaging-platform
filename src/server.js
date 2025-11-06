@@ -20,6 +20,7 @@ const io = new Server({
 
 // middleware
 app.use(express.json());
+app.use(express.static('public'));
 
 // health check
 app.get('/health', (req, res) => {
