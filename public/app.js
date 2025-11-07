@@ -11,6 +11,9 @@ const loginError = document.getElementById('login-error');
 const logoutButton = document.getElementById('logout-btn');
 const usersCountEl = document.getElementById('users-count');
 const usersListEl = document.getElementById('users-list');
+const messagesEl = document.getElementById('messages');
+const messageInput = document.getElementById('message-input');
+const sendButton = document.getElementById('send-btn');
 
 loginForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -96,6 +99,11 @@ function connectToServer(username) {
       renderUsersList();
     }
   });
+
+  socket.on('message', (message) => {
+    console.log('Message received:', message);
+    displayMessage(message);
+  });
 }
 
 function showChatScreen() {
@@ -152,4 +160,57 @@ function renderUsersList() {
 
     usersListEl.appendChild(userEl);
   });
+}
+
+function sendMessage() {
+  const text = messageInput.value.trim();
+
+  if (!text) return;
+
+  socket.emit('message', text);
+
+  messageInput.value = '';
+}
+
+sendButton.addEventListener('click', sendMessage);
+
+messageInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    sendMessage();
+  }
+});
+
+function displayMessage(message) {
+  const messageEl = document.createElement('div');
+  const isOwn = message.senderId === currentUser.id;
+
+  messageEl.className = `message ${isOwn ? 'own' : 'other'}`;
+
+  const time = new Date(message.timestamp).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  messageEl.innerHTML = `
+  <div class="message-header">
+    <span class="message-username">${escapeHtml(message.username)}</span>
+    <span class="message-time">${time}</span>
+  </div>
+  <div class="message-bubble">
+    <div class="message-text">${escapeHtml(message.text)}</div>
+  </div>
+  `;
+
+  messagesEl.appendChild(messageEl);
+  scrollToBottom();
+}
+
+function scrollToBottom() {
+  messagesEl.parentElement.scrollTop = messagesEl.parentElement.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }

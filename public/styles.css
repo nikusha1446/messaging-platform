@@ -254,7 +254,7 @@ body {
 /* chat main area */
 
 .chat-main-container {
-  max-width: 60rem;
+  max-width: 50rem;
   width: 100%;
   margin-inline: auto;
   display: flex;
@@ -367,6 +367,71 @@ body {
 #send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* messages */
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 70%;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.message.own {
+  align-self: flex-end;
+}
+
+.message.other {
+  align-self: flex-start;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.message.own .message-header {
+  justify-content: flex-end;
+}
+
+.message-username {
+  font-weight: 500;
+  color: #fff;
+}
+
+.message-time {
+  color: #676770;
+  font-size: 0.75rem;
+}
+
+.message-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  word-wrap: break-word;
+}
+
+.message.own .message-bubble {
+  background: #1354e4;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.message.other .message-bubble {
+  background: #111114;
+  color: #fafafa;
+  border: 1px solid #27272a;
+  border-bottom-left-radius: 4px;
+}
+
+.message-text {
+  line-height: 1.4;
+  font-size: 0.875rem;
 }
 
 /* responsive */
