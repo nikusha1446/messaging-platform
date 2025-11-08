@@ -1,6 +1,7 @@
 let socket = null;
 let currentUser = null;
 let onlineUsers = new Map();
+let typingTimeout = null;
 
 const loginScreen = document.getElementById('login-screen');
 const chatScreen = document.getElementById('chat-screen');
@@ -14,6 +15,8 @@ const usersListEl = document.getElementById('users-list');
 const messagesEl = document.getElementById('messages');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-btn');
+const typingIndicator = document.getElementById('typing-indicator');
+const typingText = document.getElementById('typing-text');
 
 loginForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -104,6 +107,16 @@ function connectToServer(username) {
     console.log('Message received:', message);
     displayMessage(message);
   });
+
+  socket.on('user:typing', (data) => {
+    console.log('User typing:', data.username);
+    showTypingIndicator(data.username);
+  });
+
+  socket.on('user:stopped:typing', (data) => {
+    console.log('User stopped typing:', data.username);
+    hideTypingIndicator();
+  });
 }
 
 function showChatScreen() {
@@ -137,6 +150,30 @@ logoutButton.addEventListener('click', () => {
   location.reload();
 });
 
+function startTyping() {
+  socket.emit('typing:start');
+
+  clearTimeout(typingTimeout);
+
+  typingTimeout = setTimeout(() => {
+    stopTyping();
+  }, 2000);
+}
+
+function stopTyping() {
+  socket.emit('typing:stop');
+  clearTimeout(typingTimeout);
+}
+
+function showTypingIndicator(username) {
+  typingText.textContent = `${username} is typing...`;
+  typingIndicator.classList.remove('hidden');
+}
+
+function hideTypingIndicator() {
+  typingIndicator.classList.add('hidden');
+}
+
 function renderUsersList() {
   usersListEl.innerHTML = '';
   usersCountEl.textContent = onlineUsers.size - 1;
@@ -168,11 +205,20 @@ function sendMessage() {
   if (!text) return;
 
   socket.emit('message', text);
-
   messageInput.value = '';
+
+  stopTyping();
 }
 
 sendButton.addEventListener('click', sendMessage);
+
+messageInput.addEventListener('input', () => {
+  if (messageInput.value.trim()) {
+    startTyping();
+  } else {
+    stopTyping();
+  }
+});
 
 messageInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {

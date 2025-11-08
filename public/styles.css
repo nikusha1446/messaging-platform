@@ -187,7 +187,7 @@ body {
 
 /* chat users section */
 .users-section {
-  padding: 21.5px 22px;
+  padding: 10px 22px 21.5px 22px;
   overflow-y: auto;
   flex: 1;
 }
@@ -432,6 +432,45 @@ body {
 .message-text {
   line-height: 1.4;
   font-size: 0.875rem;
+}
+
+/* typing indicator */
+
+#typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  color: #71717a;
+  font-size: 0.875rem;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.typing-dots span {
+  width: 5px;
+  height: 5px;
+  background: #71717a;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0s;
 }
 
 /* responsive */
