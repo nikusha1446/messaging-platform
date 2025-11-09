@@ -96,12 +96,38 @@ function connectToServer(username) {
     console.log('User joined:', data.user.username);
     onlineUsers.set(data.user.id, data.user);
     renderUsersList();
+
+    if (data.user.id !== currentUser.id) {
+      const systemMessage = {
+        type: 'system',
+        text: `${data.user.username} joined the chat`,
+        timestamp: Date.now(),
+      };
+      messageHistory.group.push(systemMessage);
+
+      if (currentChat === 'group') {
+        addSystemMessage(`${data.user.username} joined the chat`);
+      }
+    }
   });
 
   socket.on('user:left', (data) => {
     console.log('User left:', data.user.username);
     onlineUsers.delete(data.user.id);
     renderUsersList();
+
+    if (data.user.id !== currentUser.id) {
+      const systemMessage = {
+        type: 'system',
+        text: `${data.user.username} left the chat`,
+        timestamp: Date.now(),
+      };
+      messageHistory.group.push(systemMessage);
+
+      if (currentChat === 'group') {
+        addSystemMessage(`${data.user.username} left the chat`);
+      }
+    }
   });
 
   socket.on('user:status:changed', (data) => {
@@ -267,7 +293,11 @@ function switchToGroupChat() {
   hideTypingIndicator();
 
   messageHistory.group.forEach((message) => {
-    displayMessage(message, false);
+    if (message.type === 'system') {
+      addSystemMessage(message.text);
+    } else {
+      displayMessage(message, false);
+    }
   });
 
   document.querySelectorAll('.user-item').forEach((el) => {
@@ -368,6 +398,14 @@ function displayMessage(message, isPrivate = false) {
   </div>
   `;
 
+  messagesEl.appendChild(messageEl);
+  scrollToBottom();
+}
+
+function addSystemMessage(text) {
+  const messageEl = document.createElement('div');
+  messageEl.className = 'system-message';
+  messageEl.textContent = text;
   messagesEl.appendChild(messageEl);
   scrollToBottom();
 }

@@ -473,6 +473,17 @@ body {
   animation-delay: 0s;
 }
 
+/* system messages */
+
+.system-message {
+  text-align: center;
+  color: #676770;
+  font-size: 0.8125rem;
+  padding: 8px 16px;
+  margin: 8px 0;
+  font-style: italic;
+}
+
 /* responsive */
 @media (max-width: 768px) {
   #chat-screen {
