@@ -1,26 +1,44 @@
 import { logger } from '../utils/logger.js';
 
 export const handleTypingStart = (userService) => (socket) => {
-  socket.on('typing:start', () => {
+  socket.on('typing:start', (data) => {
     const user = userService.setTyping(socket.id);
 
     if (user) {
       logger.debug(`${user.username} started typing`);
 
-      socket.broadcast.emit('user:typing', {
-        userId: user.id,
-        username: user.username,
-      });
+      if (data && data.recipientId) {
+        socket.to(data.recipientId).emit('user:typing', {
+          userId: user.id,
+          username: user.username,
+          context: socket.id,
+        });
+      } else {
+        socket.broadcast.emit('user:typing', {
+          userId: user.id,
+          username: user.username,
+          context: 'group',
+        });
+      }
 
       userService.setTypingTimeout(socket.id, () => {
         const user = userService.stopTyping(socket.id);
         if (user) {
           logger.debug(`${user.username} auto-stopped typing (timeout)`);
 
-          socket.broadcast.emit('user:stopped:typing', {
-            userId: user.id,
-            username: user.username,
-          });
+          if (data && data.recipientId) {
+            socket.to(data.recipientId).emit('user:stopped:typing', {
+              userId: user.id,
+              username: user.username,
+              context: socket.id,
+            });
+          } else {
+            socket.broadcast.emit('user:stopped:typing', {
+              userId: user.id,
+              username: user.username,
+              context: 'group',
+            });
+          }
         }
       });
     }
@@ -28,16 +46,25 @@ export const handleTypingStart = (userService) => (socket) => {
 };
 
 export const handleTypingStop = (userService) => (socket) => {
-  socket.on('typing:stop', () => {
+  socket.on('typing:stop', (data) => {
     const user = userService.stopTyping(socket.id);
 
     if (user) {
       logger.debug(`${user.username} stopped typing`);
 
-      socket.broadcast.emit('user:stopped:typing', {
-        userId: user.id,
-        username: user.username,
-      });
+      if (data && data.recipientId) {
+        socket.to(data.recipientId).emit('user:stopped:typing', {
+          userId: user.id,
+          username: user.username,
+          context: socket.id,
+        });
+      } else {
+        socket.broadcast.emit('user:stopped:typing', {
+          userId: user.id,
+          username: user.username,
+          context: 'group',
+        });
+      }
     }
   });
 };

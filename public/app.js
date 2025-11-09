@@ -2,6 +2,11 @@ let socket = null;
 let currentUser = null;
 let onlineUsers = new Map();
 let typingTimeout = null;
+let currentChat = 'group';
+let messageHistory = {
+  group: [],
+  private: new Map(),
+};
 
 const loginScreen = document.getElementById('login-screen');
 const chatScreen = document.getElementById('chat-screen');
@@ -17,6 +22,9 @@ const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-btn');
 const typingIndicator = document.getElementById('typing-indicator');
 const typingText = document.getElementById('typing-text');
+const groupChatBtn = document.getElementById('group-chat-btn');
+const chatTitle = document.getElementById('chat-title');
+const chatSubtitle = document.getElementById('chat-subtitle');
 
 loginForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -36,6 +44,9 @@ loginForm.addEventListener('submit', (e) => {
 });
 
 function connectToServer(username) {
+  let currentTypingUser = null;
+  let currentTypingContext = null;
+
   socket = io({
     auth: {
       username,
@@ -105,17 +116,55 @@ function connectToServer(username) {
 
   socket.on('message', (message) => {
     console.log('Message received:', message);
-    displayMessage(message);
+
+    messageHistory.group.push(message);
+
+    if (currentChat === 'group') {
+      displayMessage(message);
+    }
+  });
+
+  socket.on('message:private', (message) => {
+    console.log('Private message received:', message);
+
+    const otherUserId =
+      message.senderId === currentUser.id
+        ? message.recipientId
+        : message.senderId;
+
+    if (!messageHistory.private.has(otherUserId)) {
+      messageHistory.private.set(otherUserId, []);
+    }
+
+    messageHistory.private.get(otherUserId).push(message);
+
+    if (currentChat === otherUserId) {
+      displayMessage(message, true);
+    }
   });
 
   socket.on('user:typing', (data) => {
-    console.log('User typing:', data.username);
-    showTypingIndicator(data.username);
+    console.log('User typing:', data.username, 'Context:', data.context);
+
+    const typingContext = data.context || 'group';
+
+    if (currentChat === typingContext) {
+      currentTypingUser = data.userId;
+      currentTypingContext = typingContext;
+      showTypingIndicator(data.username);
+    }
   });
 
   socket.on('user:stopped:typing', (data) => {
     console.log('User stopped typing:', data.username);
-    hideTypingIndicator();
+
+    const typingContext = data.context || 'group';
+
+    if (currentChat === typingContext && currentTypingUser === data.userId) {
+      hideTypingIndicator();
+      currentTypingUser = null;
+      currentTypingContext = null;
+    }
   });
 }
 
@@ -147,11 +196,18 @@ logoutButton.addEventListener('click', () => {
   }
 
   currentUser = null;
+  messageHistory.group = [];
+  messageHistory.private.clear();
   location.reload();
 });
 
+groupChatBtn.addEventListener('click', () => {
+  switchToGroupChat();
+});
+
 function startTyping() {
-  socket.emit('typing:start');
+  const data = currentChat === 'group' ? {} : { recipientId: currentChat };
+  socket.emit('typing:start', data);
 
   clearTimeout(typingTimeout);
 
@@ -161,7 +217,8 @@ function startTyping() {
 }
 
 function stopTyping() {
-  socket.emit('typing:stop');
+  const data = currentChat === 'group' ? {} : { recipientId: currentChat };
+  socket.emit('typing:stop', data);
   clearTimeout(typingTimeout);
 }
 
@@ -172,6 +229,53 @@ function showTypingIndicator(username) {
 
 function hideTypingIndicator() {
   typingIndicator.classList.add('hidden');
+}
+
+function switchToPrivateChat(user) {
+  currentChat = user.id;
+  chatTitle.textContent = user.username;
+  chatSubtitle.textContent = 'Private conversation';
+
+  messagesEl.innerHTML = '';
+  hideTypingIndicator();
+
+  const history = messageHistory.private.get(user.id) || [];
+  history.forEach((message) => {
+    displayMessage(message, true);
+  });
+
+  document.querySelectorAll('.user-item').forEach((el) => {
+    el.classList.remove('active');
+  });
+
+  const selectedUser = document.querySelector(`[data-user-id="${user.id}"]`);
+
+  if (selectedUser) {
+    selectedUser.classList.add('active');
+  }
+
+  groupChatBtn.classList.remove('active');
+  messageInput.focus();
+}
+
+function switchToGroupChat() {
+  currentChat = 'group';
+  chatTitle.textContent = 'Group Chat';
+  chatSubtitle.textContent = 'Everyone can see these messages';
+
+  messagesEl.innerHTML = '';
+  hideTypingIndicator();
+
+  messageHistory.group.forEach((message) => {
+    displayMessage(message, false);
+  });
+
+  document.querySelectorAll('.user-item').forEach((el) => {
+    el.classList.remove('active');
+  });
+
+  groupChatBtn.classList.add('active');
+  messageInput.focus();
 }
 
 function renderUsersList() {
@@ -185,6 +289,10 @@ function renderUsersList() {
     userEl.className = 'user-item';
     userEl.dataset.userId = user.id;
 
+    if (currentChat === user.id) {
+      userEl.classList.add('active');
+    }
+
     const statusDot = document.createElement('span');
     statusDot.className = `user-status ${user.status}`;
 
@@ -195,6 +303,10 @@ function renderUsersList() {
     userEl.appendChild(statusDot);
     userEl.appendChild(nameSpan);
 
+    userEl.addEventListener('click', () => {
+      switchToPrivateChat(user);
+    });
+
     usersListEl.appendChild(userEl);
   });
 }
@@ -204,9 +316,16 @@ function sendMessage() {
 
   if (!text) return;
 
-  socket.emit('message', text);
-  messageInput.value = '';
+  if (currentChat === 'group') {
+    socket.emit('message', text);
+  } else {
+    socket.emit('message:private', {
+      recipientId: currentChat,
+      text: text,
+    });
+  }
 
+  messageInput.value = '';
   stopTyping();
 }
 
@@ -226,7 +345,7 @@ messageInput.addEventListener('keypress', (e) => {
   }
 });
 
-function displayMessage(message) {
+function displayMessage(message, isPrivate = false) {
   const messageEl = document.createElement('div');
   const isOwn = message.senderId === currentUser.id;
 
@@ -236,6 +355,8 @@ function displayMessage(message) {
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  const username = message.username || message.senderUsername;
 
   messageEl.innerHTML = `
   <div class="message-header">
