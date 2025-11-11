@@ -7,6 +7,14 @@ export const handlePublicMessage =
 
       if (!messageText || messageText.trim() === '') {
         socket.emit('error', { message: 'Message cannot be empty' });
+
+        if (acknowledgment && typeof acknowledgment === 'function') {
+          acknowledgment({
+            success: false,
+            error: 'Message cannot be empty',
+          });
+        }
+
         return;
       }
 
@@ -48,11 +56,19 @@ export const handlePublicMessage =
 
 export const handlePrivateMessage =
   (io, userService, messageService) => (socket) => {
-    socket.on('message:private', (data) => {
+    socket.on('message:private', (data, acknowledgment) => {
       const { recipientId, text } = data;
 
       if (!recipientId || !text || text.trim() === '') {
         socket.emit('error', { message: 'Invalid private message format' });
+
+        if (acknowledgment && typeof acknowledgment === 'function') {
+          acknowledgment({
+            success: false,
+            error: 'Invalid private message format',
+          });
+        }
+
         return;
       }
 
@@ -60,11 +76,27 @@ export const handlePrivateMessage =
 
       if (!recipient) {
         socket.emit('error', { message: 'Recipient not found' });
+
+        if (acknowledgment && typeof acknowledgment === 'function') {
+          acknowledgment({
+            success: false,
+            error: 'Recipient not found',
+          });
+        }
+
         return;
       }
 
       if (recipientId === socket.id) {
         socket.emit('error', { message: 'Cannot send message to yourself' });
+
+        if (acknowledgment && typeof acknowledgment === 'function') {
+          acknowledgment({
+            success: false,
+            error: 'Cannot send message to yourself',
+          });
+        }
+
         return;
       }
 
@@ -77,6 +109,14 @@ export const handlePrivateMessage =
         recipient.username,
         text
       );
+
+      if (acknowledgment && typeof acknowledgment === 'function') {
+        acknowledgment({
+          success: true,
+          messageId: message.id,
+          timestamp: message.timestamp,
+        });
+      }
 
       io.to(recipientId).emit('message:private', message);
       socket.emit('message:private', message);
