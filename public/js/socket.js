@@ -93,6 +93,11 @@ export function connectToServer(username) {
 
     if (state.currentChat === 'group') {
       displayMessage(message);
+    } else {
+      if (message.senderId !== state.currentUser.id) {
+        state.unreadCounts.group++;
+        renderUsersList();
+      }
     }
   });
 
@@ -110,6 +115,12 @@ export function connectToServer(username) {
 
     if (state.currentChat === otherUserId) {
       displayMessage(message, true);
+    } else {
+      if (message.senderId !== state.currentUser.id) {
+        const currentCount = state.unreadCounts.private.get(otherUserId) || 0;
+        state.unreadCounts.private.set(otherUserId, currentCount + 1);
+        renderUsersList();
+      }
     }
   });
 

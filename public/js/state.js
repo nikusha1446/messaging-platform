@@ -10,4 +10,8 @@ export const state = {
     group: [],
     private: new Map(),
   },
+  unreadCounts: {
+    group: 0,
+    private: new Map(),
+  },
 };

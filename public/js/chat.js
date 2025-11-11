@@ -1,6 +1,7 @@
 import { dom } from './dom.js';
 import { state } from './state.js';
 import { hideTypingIndicator, stopTyping } from './typing.js';
+import { renderUsersList } from './users.js';
 import { escapeHtml, formatTime, scrollToBottom } from './utils.js';
 
 export function initChat() {
@@ -263,6 +264,8 @@ export function addSystemMessage(text) {
 
 export function switchToPrivateChat(user) {
   state.currentChat = user.id;
+  state.unreadCounts.private.set(user.id, 0);
+  renderUsersList();
   dom.chatTitle.textContent = user.username;
   dom.chatSubtitle.textContent = 'Private conversation';
 
@@ -290,6 +293,8 @@ export function switchToPrivateChat(user) {
 
 export function switchToGroupChat() {
   state.currentChat = 'group';
+  state.unreadCounts.group = 0;
+  renderUsersList();
   dom.chatTitle.textContent = 'Group Chat';
   dom.chatSubtitle.textContent = 'Everyone can see these messages';
 
