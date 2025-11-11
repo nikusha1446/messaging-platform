@@ -100,6 +100,20 @@ export const handlePrivateMessage =
         return;
       }
 
+      userService.stopTyping(socket.id);
+
+      const activityResult = userService.updateActivity(socket.id);
+
+      if (activityResult.statusChanged) {
+        logger.info(`User ${socket.username} is back online`);
+
+        io.emit('user:status:changed', {
+          user: activityResult.user,
+          oldStatus: 'away',
+          newStatus: 'online',
+        });
+      }
+
       const sender = userService.getUser(socket.id);
 
       const message = messageService.createPrivateMessage(
