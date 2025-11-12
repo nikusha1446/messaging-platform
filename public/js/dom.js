@@ -16,4 +16,7 @@ export const dom = {
   groupChatBtn: document.getElementById('group-chat-btn'),
   chatTitle: document.getElementById('chat-title'),
   chatSubtitle: document.getElementById('chat-subtitle'),
+  sidebar: document.querySelector('.sidebar'),
+  sidebarToggle: document.getElementById('sidebar-toggle'),
+  sidebarOverlay: document.getElementById('sidebar-overlay'),
 };

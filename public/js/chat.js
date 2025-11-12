@@ -1,4 +1,5 @@
 import { dom } from './dom.js';
+import { closeSidebarOnMobile } from './sidebar.js';
 import { state } from './state.js';
 import { hideTypingIndicator, stopTyping } from './typing.js';
 import { renderUsersList } from './users.js';
@@ -289,6 +290,8 @@ export function switchToPrivateChat(user) {
 
   dom.groupChatBtn.classList.remove('active');
   dom.messageInput.focus();
+
+  closeSidebarOnMobile();
 }
 
 export function switchToGroupChat() {
@@ -315,4 +318,6 @@ export function switchToGroupChat() {
 
   dom.groupChatBtn.classList.add('active');
   dom.messageInput.focus();
+
+  closeSidebarOnMobile();
 }
